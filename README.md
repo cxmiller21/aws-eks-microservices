@@ -85,6 +85,8 @@ This is an example of how to list things you need to use the software and how to
 * Terraform - [Install steps](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 * Python - [Install steps](https://www.python.org/downloads/)
   * Macs can use `brew install python`
+* Docker - [Install steps](https://docs.docker.com/get-docker/)
+* Kind - [Install steps](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 
 ### Getting Started
 
