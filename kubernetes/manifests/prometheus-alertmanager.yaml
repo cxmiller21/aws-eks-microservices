@@ -1,0 +1,8 @@
+# Not working to fix Prometheus Alertmanager crashbackloop error
+# https://stackoverflow.com/questions/62822422/prometheus-alert-manager-error-component-cluster-err-couldnt-deduce-an-advert
+configmapReload:
+  server:
+    alertmanager:
+      extraArgs:
+        - "--cluster.advertise-address='0.0.0.0:9093'"
+        - "--cluster.listen-address="

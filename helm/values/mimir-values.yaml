@@ -1,0 +1,54 @@
+global:
+  # extraEnvFrom:
+  #   - secretRef:
+  #       name: mimir-bucket-secret
+  podAnnotations:
+    bucketSecretVersion: "0"
+
+# Disable the requirement that every request to Mimir has a
+# X-Scope-OrgID header. `anonymous` will be substituted in instead.
+multitenancy_enabled: false
+
+metaMonitoring:
+  serviceMonitor:
+    enabled: true
+  # grafanaAgent:
+  #   enabled: true
+  #   installOperator: true
+  #   metrics:
+  #     additionalRemoteWriteConfigs:
+  #       - url: "http://mimir-nginx.mimir-test.svc:80/api/v1/push"
+
+  grafanaAgent:
+    enabled: true
+    installOperator: false
+    metrics:
+      additionalRemoteWriteConfigs:
+        - url: "http://mimir-nginx.monitoring.svc:80/api/v1/push"
+
+
+# This turns of the built-in MinIO support
+minio:
+  enabled: true # false for S3
+
+# mimir:
+#   structuredConfig:
+#     alertmanager_storage:
+#       s3:
+#         bucket_name: eks-microservices-default-mimir-bucket
+#         endpoint: s3.amazonaws.com
+#         region: us-east-1
+#         insecure: true
+#     blocks_storage:
+#       backend: s3
+#       s3:
+#         bucket_name: eks-microservices-default-mimir-bucket
+#         endpoint: s3.amazonaws.com
+#         region: us-east-1
+#         insecure: true
+#     ruler_storage:
+#       s3:
+#         bucket_name: eks-microservices-default-mimir-bucket
+#         endpoint: s3.amazonaws.com
+#         region: us-east-1
+#         insecure: true

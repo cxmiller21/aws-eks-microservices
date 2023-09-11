@@ -1,0 +1,30 @@
+minio:
+  enabled: true
+
+loki:
+  auth_enabled: false
+  structuredConfig:
+    ingester:
+      # Disable chunk transfer which is not possible with statefulsets
+      # and unnecessary for boltdb-shipper
+      max_transfer_retries: 0
+      chunk_idle_period: 1h
+      chunk_target_size: 1536000
+      max_chunk_age: 1h
+    # storage_config:
+    #   aws:
+    #     s3: s3://us-east-1
+    #     bucketnames: eks-microservices-default-loki-bucket
+    #     dynamodb:
+    #       dynamodb_url: dynamodb://us-east-1
+    #   boltdb_shipper:
+    #     shared_store: s3
+    # schema_config:
+    #   configs:
+    #     - from: 2020-09-07
+    #       store: boltdb-shipper
+    #       object_store: aws
+    #       schema: v11
+    #       index:
+    #         prefix: loki_index_
+    #         period: 24h

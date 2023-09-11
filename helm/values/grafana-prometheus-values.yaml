@@ -1,0 +1,69 @@
+grafana:
+  env:
+    # GF_FEATURE_TOGGLES_ENABLE: traceToMetrics
+    GF_FEATURE_TOGGLES_ENABLE: tempoSearch,tempoServiceGraph,tempoApmTable,traceqlEditor
+
+    # GF_AUTH_ANONYMOUS_ENABLED: true
+    # GF_AUTH_ANONYMOUS_ORG_ROLE: 'Admin'
+    # GF_AUTH_DISABLE_LOGIN_FORM: true
+
+  # Add additional data sources for Grafana to query.
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki-distributed-gateway.monitoring.svc.cluster.local:80
+      jsonData:
+        maxLines: 1000
+    - name: Mimir
+      type: prometheus
+      access: proxy
+      url: http://mimir-nginx.monitoring.svc:80/prometheus
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      url: http://tempo-query-frontend.monitoring.svc.cluster.local:3100
+      access: proxy
+      basicAuth: false
+      jsonData:
+        httpMethod: GET
+        tracesToLogsV2:
+          # Field with an internal link pointing to a logs data source in Grafana.
+          # datasourceUid value must match the uid value of the logs data source.
+          datasourceUid: 'Loki'
+          # spanStartTimeShift: '1h'
+          # spanEndTimeShift: '-1h'
+          tags: ['job', 'instance', 'pod', 'namespace']
+          filterByTraceID: false
+          filterBySpanID: false
+          customQuery: true
+          query: 'method="${__span.tags.method}"'
+        # tracesToMetrics:
+        #   datasourceUid: 'Prometheus'
+        #   spanStartTimeShift: '1h'
+        #   spanEndTimeShift: '-1h'
+        #   tags: [{ key: 'service.name', value: 'service' }, { key: 'job' }]
+        #   queries:
+        #     - name: 'Sample query'
+        #       query: 'sum(rate(traces_spanmetrics_latency_bucket{$__tags}[5m]))'
+        serviceMap:
+          datasourceUid: 'Prometheus'
+        nodeGraph:
+          enabled: true
+        search:
+          hide: false
+        lokiSearch:
+          datasourceUid: 'Loki'
+        traceQuery:
+          timeShiftEnabled: true
+          spanStartTimeShift: '1h'
+          spanEndTimeShift: '-1h'
+        spanBar:
+          type: 'Tag'
+          tag: 'http.path'
+
+prometheus:
+  remote_write:
+    - url: http://mimir-nginx.monitoring.svc:80/prometheus/api/v1/push
+      # headers:
+      #   X-Scope-OrgID: CMOrg

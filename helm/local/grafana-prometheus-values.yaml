@@ -1,0 +1,88 @@
+# grafana.ini:
+#   server:
+#     domain: grafana.cluster.local
+    # root_url: '%(protocol)s://%(domain)s/grafana'
+    # serve_from_sub_path: true
+
+grafana:
+  env:
+    # GF_AUTH_ANONYMOUS_ENABLED: true
+    # GF_AUTH_ANONYMOUS_ORG_ROLE: 'Admin'
+    # GF_AUTH_DISABLE_LOGIN_FORM: true
+    GF_FEATURE_TOGGLES_ENABLE: tempoSearch,tempoServiceGraph,tempoApmTable,traceqlEditor
+
+  # ingress:
+  #   enabled: true
+  #   hosts:
+  #     - 'localhost'
+  #   path: '/grafana'
+
+  # Add additional data sources for Grafana to query.
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      uuid: prometheus
+      access: proxy
+      url: http://prometheus-community-kube-prometheus.monitoring:9090/
+      jsonData:
+          httpMethod: GET
+      version: 1
+    - name: Loki
+      type: loki
+      uuid: loki
+      access: proxy
+      url: http://loki-distributed-gateway.monitoring.svc.cluster.local:80
+      jsonData:
+        maxLines: 1000
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      url: http://tempo-gateway.monitoring.svc.cluster.local:80
+      jsonData:
+        httpMethod: GET
+        serviceMap:
+          datasourceUid: 'prometheus'
+        version: 1
+        # httpMethod: GET
+        # tracesToLogsV2:
+        #   # Field with an internal link pointing to a logs data source in Grafana.
+        #   # datasourceUid value must match the uid value of the logs data source.
+        #   datasourceUid: 'loki'
+        #   # spanStartTimeShift: '1h'
+        #   # spanEndTimeShift: '-1h'
+        #   tags: ['job', 'instance', 'pod', 'namespace']
+        #   filterByTraceID: false
+        #   filterBySpanID: false
+        #   customQuery: true
+        #   query: 'method="${__span.tags.method}"'
+        # tracesToMetrics:
+        #   datasourceUid: 'Prometheus'
+        #   spanStartTimeShift: '1h'
+        #   spanEndTimeShift: '-1h'
+        #   tags: [{ key: 'service.name', value: 'service' }, { key: 'job' }]
+        #   queries:
+        #     - name: 'Sample query'
+        #       query: 'sum(rate(traces_spanmetrics_latency_bucket{$__tags}[5m]))'
+        # serviceMap:
+        #   datasourceUid: 'Prometheus'
+        nodeGraph:
+          enabled: true
+        # search:
+        #   hide: false
+        # lokiSearch:
+        #   datasourceUid: 'loki'
+        # traceQuery:
+        #   timeShiftEnabled: true
+        #   spanStartTimeShift: '1h'
+        #   spanEndTimeShift: '-1h'
+        # spanBar:
+        #   type: 'Tag'
+        #   tag: 'http.path'
+
+prometheus:
+  prometheusSpec:
+    enableRemoteWriteReceiver: true
+    enableFeatures:
+      - remote-write-receiver
+  extraFlags:
+    - web.enable-remote-write-receiver

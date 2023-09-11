@@ -1,0 +1,3 @@
+config:
+  clients:
+    - url: http://loki-distributed-gateway.monitoring.svc.cluster.local:80/loki/api/v1/push

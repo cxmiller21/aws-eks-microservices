@@ -1,0 +1,42 @@
+global:
+  clusterDomain: 'cluster.local'
+
+multitenancyEnabled: false
+
+gateway:
+  enabled: true
+
+storage:
+  trace:
+    backend: local
+
+minio:
+  enabled: true
+
+metricsGenerator:
+  enabled: true
+  config:
+    storage_remote_write:
+     - url: http://prometheus-community-kube-prometheus.monitoring.svc:9090/api/v1/write
+       send_exemplars: true
+    #   headers:
+    #     x-scope-orgid: operations
+
+traces:
+  otlp:
+    grpc:
+      enabled: true
+    http:
+      enabled: true
+  zipkin:
+    enabled: false
+  jaeger:
+    thriftHttp:
+      enabled: false
+  opencensus:
+    enabled: false
+
+global_overrides:
+  metrics_generator_processors:
+    - service-graphs
+    - span-metrics

@@ -1,0 +1,33 @@
+global:
+  # extraEnvFrom:
+  #   - secretRef:
+  #       name: mimir-bucket-secret
+  podAnnotations:
+    bucketSecretVersion: "0"
+
+# Disable the requirement that every request to Mimir has a
+# X-Scope-OrgID header. `anonymous` will be substituted in instead.
+multitenancy_enabled: false
+
+metaMonitoring:
+  serviceMonitor:
+    enabled: true
+
+  grafanaAgent:
+    enabled: true
+    installOperator: false
+    metrics:
+      additionalRemoteWriteConfigs:
+        - url: "http://mimir-nginx.monitoring.svc:80/api/v1/push"
+
+# This turns of the built-in MinIO support
+minio:
+  enabled: true # false for S3
+  # name: mimir
+  # serviceAccount:
+  # create: true
+  # name: mimir
+  # annotations:
+  #   meta.helm.sh/release-name: mimir
+  # labels:
+  #   meta.helm.sh/release-name: mimir
