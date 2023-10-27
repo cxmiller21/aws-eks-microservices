@@ -32,7 +32,7 @@
 
 - [ ] Automate EKS cluster deletion with a Lambda function (Spin down resources each night and **MANUALLY** spin them back up in the morning)
 - [x] Validate project spins up successfully with Terraform
-- x ] Validate EKS cluster logging and monitoring
+- [ ] Validate EKS cluster logging and monitoring
   - [x] Grafana collects logs and metrics and stores them in S3
   - [x] Logs and metrics and are viewable in Grafana dashboards
 - [ ] Remove Grafana from Terraform management
@@ -52,7 +52,6 @@
 - [ ] Create GitHub Actions workflow to build and push Docker images to ECR
 - [ ] Create GitHub Actions workflow to deploy Terraform changes
 - [ ] Create GitHub Actions workflow to deploy Kubernetes changes
-
 - [ ] Set up EC2 instance with GitLab to run CI/CD pipelines to avoid Code* apps??
 
 ## ArgoCD
