@@ -1,18 +1,7 @@
 provider "aws" {
-  region = local.region
+  region  = local.region
+  profile = "aws-eks-demo"
 }
-
-# provider "kubernetes" {
-#   host                   = module.eks.cluster_endpoint
-#   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-
-#   exec {
-#     api_version = "client.authentication.k8s.io/v1beta1"
-#     command     = "aws"
-#     # This requires the awscli to be installed locally where Terraform is executed
-#     args = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-#   }
-# }
 
 data "aws_caller_identity" "current" {}
 data "aws_availability_zones" "available" {}
@@ -21,27 +10,54 @@ data "aws_region" "current" {}
 locals {
   account_id     = data.aws_caller_identity.current.account_id
   region         = "us-east-1"
-  project_prefix = "${var.project_name}-${terraform.workspace}"
+  project_prefix = "${local.name}-${terraform.workspace}"
   # s3_bucket_name = "${local.project_prefix}-${local.region}-${local.account_id}"
 
-  # name            = "ex-${replace(basename(path.cwd), "_", "-")}"
-  name            = local.project_prefix
+  ssm_parameter_prefix = replace(replace(local.project_prefix, "aws-", ""), "-", "_") # replace(local.project_prefix, "aws-", "")
+
   cluster_version = "1.27"
 
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
-
-  tags = {
-    Example    = local.name
-    GithubRepo = "terraform-aws-eks"
-    GithubOrg  = "terraform-aws-modules"
-  }
 }
 
 ################################################################################
 # EKS Module
 ################################################################################
+
 /*
+Needed to "fully" create the EKS cluster and the manage_aws_auth_configmap
+https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html#aws-auth-configmap
+
+"It is initially created to allow nodes to join your cluster, but you also use this
+ConfigMap to add role-based access control (RBAC) access to IAM principals"
+*/
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    # This requires the awscli to be installed locally where Terraform is executed
+    args = ["eks", "get-token", "--cluster-name", local.name]
+  }
+}
+
+resource "aws_ssm_parameter" "eks_cluster_certificate_authority_data" {
+  name        = "/${local.ssm_parameter_prefix}/cluster_certificate_authority_data"
+  type        = "SecureString" # "String" or "SecureString"
+  value       = module.eks.cluster_certificate_authority_data
+  description = "EKS Cluster Certificate Authority Data"
+}
+
+resource "aws_ssm_parameter" "eks_cluster_endpoint" {
+  name        = "/${local.ssm_parameter_prefix}/cluster_endpoint"
+  type        = "String"
+  value       = module.eks.cluster_endpoint
+  description = "EKS Cluster Endpoint"
+}
+
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 19.0"
@@ -241,4 +257,4 @@ resource "aws_autoscaling_group_tag" "cluster_autoscaler_label_tags" {
     propagate_at_launch = false
   }
 }
-*/
+# */

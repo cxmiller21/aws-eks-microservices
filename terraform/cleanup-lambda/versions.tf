@@ -1,8 +1,8 @@
 terraform {
   required_version = ">= 1.5"
   backend "s3" {
-    bucket = "cm-sdg-terraform-state-bucket"
-    key    = "aws/eks-microservices/terraform.tfstate"
+    bucket = "terraform-state-bucket-gbzfds"
+    key    = "aws/eks-cleanup-lambda/terraform.tfstate"
     region = "us-east-1"
   }
 

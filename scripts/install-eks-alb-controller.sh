@@ -1,10 +1,15 @@
 #!/bin/bash
 
+# TODO: Delete this file
+# It's replaced with Terraform resources that
+# create and manage the EKS ALB/Ingress Controller
+# ../terraform/eks/kubernetes.tf
+
 # Add the AWS ELB Service Account to the EKS Cluster
 # https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
 # https://docs.aws.amazon.com/eks/latest/userguide/alb-ingress.html
 
-EKS_CLUSTER_NAME="eks-microservices-default"
+EKS_CLUSTER_NAME="aws-eks-demo-default"
 EKS_ALB_NAME="aws-load-balancer-controller"
 
 # Replace the AWS_ACCOUNT_ID in the alb-controller-service-account.yaml file

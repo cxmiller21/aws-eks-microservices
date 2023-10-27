@@ -58,12 +58,13 @@ Project details
 ### Built With
 
 * [![Python][Python.py]][Python-url]
-  * [![Java][Java.java]][Java-url] (Application alternative/incomplete example)
+* [![Java][Java.java]][Java-url]
 * [![EKS][EKS.aws]][EKS-url]
 * [![ECR][ECR.aws]][ECR-url]
 * [![OpenTelemetry][OpenTelemetry.aws]][OpenTelemetry-url]
 * [![S3][S3.aws]][S3-url]
 * [![SNS][SNS.aws]][SNS-url]
+* TODO: Add Grafana, Prometheus, Loki, Tempo, Mimir, and other
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -93,63 +94,90 @@ This is an example of how to list things you need to use the software and how to
 #### Locally
 
 1. Clone the repo
-   ```sh
+   ```bash
    git clone https://github.com/cxmiller21/aws-eks-microservices.git
    ```
 2. Create the Kind Kubernetes cluster
-   ```sh
+   ```bash
    # Creates a local Kubernetes cluster using Docker containers
    # Creates the Grafa LGTM (Loki, Grafana, Tempo, and Mimir/Prometheus - aka "Looks Good to Me") Stack
    ./scripts/create-kind-cluster.sh
    ```
-3. Create Online Boutique microservices application in the Kind cluster
-   ```sh
+3. Access ArgoCD and Grafana
+    ```bash
+    # Enable port-forwarding to ArgoCD
+    kubectl port-forward service/argo-cd-argocd-server -n argocd 8080:80
+    # Get the ArgoCD password
+    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+    # Visit `localhost:8080` and login with the username `admin` and the password from the command above
+
+    # View Grafana at
+    kubectl port-forward service/grafana 3000:80 -n monitoring
+    ```
+4. Create Online Boutique microservices application in the Kind cluster
+   ```bash
    # View Grafana at 127.0.0.1:3000 (username: admin, password: prom-operator)
    # Start online-boutique application
    kubectl apply -f ./kubernetes/local/online-boutique.yaml
    # Expose the application via a NodePort
    kubectl port-forward service/frontend-service 8080:8080 -n online-boutique
    ```
-4. Cleanup
-   ```sh
+5. Cleanup
+   ```bash
    kind get clusters # List clusters (should be names demo-cluster)
    kind delete cluster --name demo-cluster
    ```
 
 #### Deploy to AWS EKS
+
 1. Clone the repo
-   ```sh
+   ```bash
    git clone https://github.com/cxmiller21/aws-eks-microservices.git
    ```
-2. Create Terraform AWS Resources (~20 minutes)
-   ```sh
+2. (optional) Create a new AWS CLI profile
+   ```bash
+   # Create a new AWS User or Access Keys for the project
+   aws configure --profile aws-eks-demo
+   # Enter AWS Access Key ID, AWS Secret Access Key, Default region (us-east-1) name, and Default output format (press enter for default)
+   ```
+3. Create Terraform AWS Resources (~20 minutes)
+   ```bash
    cd ./terraform
    terraform init
+   # TODO: create .terraform.tfvars file and add federated_role_name = "xyz"
    terraform plan # Confirm resources
    terraform apply # Enter `yes` when prompted
    ```
-3. Allow local connections to EKS cluster (if not done already)
-   ```sh
+4. Allow local connections to EKS cluster (if not done already)
+   ```bash
    # Add the EKS Cluster to the ~/.kube/conf file to execute local kubectl commands
-   aws eks --region us-east-1 update-kubeconfig --name eks-microservices-default
+   aws eks --region us-east-1 update-kubeconfig --name aws-eks-demo
    ```
-4. Install the AWS ALB Controller in the EKS Cluster (run from project root)
-   ```sh
-   ./scripts/install-eks-alb-controller.sh
+5. Get the ArgoCD password
+   ```bash
+   # Visit the AWS ALB URL for ArgoCD and login with the username `admin` and the password from the command below
+   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
    ```
-5. Install Prometheus and Grafana via Helm (TBD)
-   ```sh
-    # Install the Grafana LGTM (Loki, Grafana, Tempo, and Mimir/Prometheus - aka "Looks Good to Me") Stack
-    ./scripts/install-grafana-lgtm-stack.sh
-    # View the Grafana dashboard via the AWS Load Balancer DNS address
-    ```
-6.  Create the Online Boutique microservices application in the EKS Cluster (run from project root)
-   ```sh
+6.  Create the Online Boutique microservices application in the EKS Cluster (run from project root) (TBD Have ArgoCD Application auto-create this)
+   ```bash
    ./scripts/install-online-boutique.sh
    ```
 7. View the "Online Boutique" from the ALB URL output in the previous step and start shopping!
 
 Congrats! The project is now up and running!
+
+#### AWS EKS Cleanup
+
+1. Delete the Online Boutique application
+   ```bash
+   ./scripts/delete-online-boutique.sh
+   ```
+2. Run the `cleanup-eks.py` script (TBD)
+   ```bash
+   # Having trouble deleting EKS Ingress/ALB resources via Terraform, so this script will delete the resources to
+   successfully run Terraform destroy
+   ./scripts/cleanup-eks.py
+   ```
 
 ### Grafana Dashboards
 
@@ -239,6 +267,8 @@ The following resources were used to help build out this project:
 [product-screenshot]: images/product-screenshot.png
 [Python.py]: https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
 [Python-url]: https://www.python.org/
+[Java.java]: https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=java&logoColor=white
+[Java-url]: https://www.java.com/en/
 [EKS.aws]: https://img.shields.io/badge/AWS%20EKS-4A4A55?style=for-the-badge&logo=amazonaws&logoColor=FF3E00
 [EKS-url]: https://aws.amazon.com/eks/
 [ECR.aws]: https://img.shields.io/badge/AWS%20ECR-4A4A55?style=for-the-badge&logo=amazonaws&logoColor=FF3E00
@@ -253,4 +283,3 @@ The following resources were used to help build out this project:
 [S3-url]: https://aws.amazon.com/s3/
 [SNS.aws]: https://img.shields.io/badge/AWS%20SNS-4A4A55?style=for-the-badge&logo=amazonaws&logoColor=FF3E00
 [SNS-url]: https://aws.amazon.com/sns/
-

@@ -1,0 +1,21 @@
+redis-ha:
+  enabled: true
+
+controller:
+  replicas: 1
+
+server:
+  replicas: 1
+  ingress:
+    enabled: true
+
+configs:
+  params:
+    server:
+      insecure: true
+
+repoServer:
+  replicas: 1
+
+applicationSet:
+  replicas: 1

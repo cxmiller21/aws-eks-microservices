@@ -26,29 +26,30 @@ metaMonitoring:
       additionalRemoteWriteConfigs:
         - url: "http://mimir-nginx.monitoring.svc:80/api/v1/push"
 
-
 # This turns of the built-in MinIO support
 minio:
-  enabled: true # false for S3
+  enabled: false # false for S3
 
-# mimir:
-#   structuredConfig:
-#     alertmanager_storage:
-#       s3:
-#         bucket_name: eks-microservices-default-mimir-bucket
-#         endpoint: s3.amazonaws.com
-#         region: us-east-1
-#         insecure: true
-#     blocks_storage:
-#       backend: s3
-#       s3:
-#         bucket_name: eks-microservices-default-mimir-bucket
-#         endpoint: s3.amazonaws.com
-#         region: us-east-1
-#         insecure: true
-#     ruler_storage:
-#       s3:
-#         bucket_name: eks-microservices-default-mimir-bucket
-#         endpoint: s3.amazonaws.com
-#         region: us-east-1
-#         insecure: true
+mimir:
+  structuredConfig:
+    # alertmanager_storage:
+    #   s3:
+    #     bucket_name: aws-eks-demo-default-mimir-bucket
+    #     endpoint: s3.amazonaws.com
+    #     region: us-east-1
+    #     insecure: true
+
+    # TODO: create new S3 buckets if these are enabled
+    blocks_storage:
+      backend: s3
+      s3:
+        bucket_name: aws-eks-demo-default-mimir-bucket
+        endpoint: s3.amazonaws.com
+        region: us-east-1
+        insecure: true
+    # ruler_storage:
+    #   s3:
+    #     bucket_name: aws-eks-demo-default-mimir-bucket
+    #     endpoint: s3.amazonaws.com
+    #     region: us-east-1
+    #     insecure: true

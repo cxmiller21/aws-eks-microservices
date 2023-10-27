@@ -1,0 +1,87 @@
+# ingress-argocd.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server-ingress
+  namespace: argocd
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    alb.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+spec:
+  rules:
+  - host: argocd-server.local
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: argocd-server
+            port:
+              number: 443
+
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: argocd-server-ingress
+#   namespace: argocd
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+#     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+#     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+# spec:
+#   rules:
+#   - host: localhost
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: argocd-server
+#             port:
+#               name: https
+
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   # annotations:
+#     # alb.ingress.kubernetes.io/backend-protocol-version: HTTP2 #This tells AWS to send traffic from the ALB using HTTP2. Can use GRPC as well if you want to leverage GRPC specific features
+#   labels:
+#     app: argogrpc
+#   name: argogrpc
+#   namespace: argocd
+# spec:
+#   ports:
+#   - name: "80"
+#     port: 80
+#     protocol: TCP
+#     targetPort: 8080
+#   selector:
+#     app.kubernetes.io/name: argocd-server
+#   sessionAffinity: None
+#   type: NodePort
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: argocd-server-ingress
+#   namespace: argocd
+#   annotations:
+#     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+#     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#   # - host: localhost
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: argocd-server
+#             port:
+#               name: https

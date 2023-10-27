@@ -11,7 +11,7 @@ storage:
   trace:
     backend: s3
     s3:
-      bucket: eks-microservices-default-otel-tempo-bucket
+      bucket: aws-eks-demo-default-otel-tempo-bucket
       endpoint: s3.amazonaws.com
       region: us-east-1
       insecure: true

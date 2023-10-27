@@ -1,16 +1,3 @@
-variable "region" {
-  default = "us-east-1"
-}
-
-variable "dr_region" {
-  default = "us-east-2"
-}
-
-variable "project_name" {
-  type    = string
-  default = "eks-microservices"
-}
-
 variable "eks_worker_group_instance_type" {
   type    = string
   default = "t2.small"
@@ -37,4 +24,5 @@ variable "public_subnet_cidrs" {
 variable "federated_role_name" {
   type        = string
   description = "SSO Federated Administrato Role Name"
+  default = ""
 }

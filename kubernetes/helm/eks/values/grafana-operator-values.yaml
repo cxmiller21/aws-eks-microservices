@@ -1,8 +1,8 @@
+remote_write:
+  - url: http://mimir-nginx.monitoring.svc:80/prometheus/api/v1/push
+
 # traces:
 #   configs:
 #     - name: default
 #       service_graphs:
 #         enabled: true
-
-remote_write:
-  - url: http://mimir-nginx.monitoring.svc:80/prometheus/api/v1/push

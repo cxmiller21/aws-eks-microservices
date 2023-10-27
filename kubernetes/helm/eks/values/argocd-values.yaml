@@ -1,0 +1,18 @@
+redis-ha:
+  enabled: true
+
+controller:
+  replicas: 2
+
+server:
+  replicas: 2
+
+configs:
+  params:
+    server.insecure: true
+
+repoServer:
+  replicas: 2
+
+applicationSet:
+  replicas: 2
