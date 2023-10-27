@@ -1,1 +1,19 @@
-# ArgoCD application yaml file
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: Online Boutique
+spec:
+  destination:
+    name: ''
+    namespace: default
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: kubernetes/online-boutique/tracing
+    repoURL: 'https://github.com/cxmiller21/aws-eks-microservices'
+    targetRevision: HEAD
+  sources: []
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

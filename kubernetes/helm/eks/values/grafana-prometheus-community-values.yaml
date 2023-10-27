@@ -12,17 +12,17 @@ grafana:
     - name: Loki
       type: loki
       access: proxy
-      url: http://loki-distributed-gateway.monitoring.svc.cluster.local:80
+      url: http://grafana-loki-distributed-gateway.monitoring.svc.cluster.local:80
       jsonData:
         maxLines: 1000
     - name: Mimir
       type: prometheus
       access: proxy
-      url: http://mimir-nginx.monitoring.svc:80/prometheus
+      url: http://grafana-mimir-nginx.monitoring.svc:80/prometheus
     - name: Tempo
       type: tempo
       uid: tempo
-      url: http://tempo-query-frontend.monitoring.svc.cluster.local:3100
+      url: http://grafana-tempo-query-frontend.monitoring.svc.cluster.local:3100
       access: proxy
       basicAuth: false
       jsonData:
