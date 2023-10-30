@@ -27,16 +27,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: online-boutique
-  name: emailservice
+  name: emailservice-modified
 spec:
   selector:
     matchLabels:
-      app: emailservice
+      app: emailservice-modified
   template:
     metadata:
       namespace: online-boutique
       labels:
-        app: emailservice
+        app: emailservice-modified
     spec:
       serviceAccountName: default
       terminationGracePeriodSeconds: 5
