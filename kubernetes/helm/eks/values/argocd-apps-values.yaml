@@ -1,0 +1,129 @@
+# https://github.com/argoproj/argo-helm/blob/main/charts/argocd-apps/values.yaml
+applications:
+  - name: online-boutique
+    project: default
+    source:
+      repoURL: 'https://github.com/cxmiller21/aws-eks-microservices'
+      targetRevision: HEAD
+      path: kubernetes/online-boutique/tracing
+    destination:
+      name: ''
+      namespace: online-boutique
+      server: 'https://kubernetes.default.svc'
+    syncPolicy:
+      automated:
+        prune: true
+        selfHeal: true
+      syncOptions:
+        - CreateNamespace=true
+
+  # Grafana and Prometheus Monitoring Applications
+  - name: grafana-promotheus
+    namespace: argocd
+    project: default
+    source:
+      chart: kube-prometheus-stack
+      repoURL: https://prometheus-community.github.io/helm-charts
+      targetRevision: "52.1.0"
+      helm:
+        releaseName: grafana-prometheus
+        value: |-
+        grafana:
+          env:
+            GF_FEATURE_TOGGLES_ENABLE: tempoSearch,tempoServiceGraph,tempoApmTable,traceqlEditor
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              access: proxy
+              url: http://grafana-loki-distributed-gateway.monitoring.svc.cluster.local:80
+              jsonData:
+                maxLines: 1000
+            - name: Mimir
+              type: prometheus
+              access: proxy
+              url: http://grafana-mimir-nginx.monitoring.svc:80/prometheus
+            - name: Tempo
+              type: tempo
+              uid: tempo
+              url: http://grafana-tempo-query-frontend.monitoring.svc.cluster.local:3100
+              access: proxy
+              basicAuth: false
+              jsonData:
+                httpMethod: GET
+                tracesToLogsV2:
+                  # Field with an internal link pointing to a logs data source in Grafana.
+                  # datasourceUid value must match the uid value of the logs data source.
+                  datasourceUid: 'Loki'
+                  # spanStartTimeShift: '1h'
+                  # spanEndTimeShift: '-1h'
+                  tags: ['job', 'instance', 'pod', 'namespace']
+                  filterByTraceID: false
+                  filterBySpanID: false
+                  customQuery: true
+                  query: 'method="${__span.tags.method}"'
+                serviceMap:
+                  datasourceUid: 'Prometheus'
+                nodeGraph:
+                  enabled: true
+                search:
+                  hide: false
+                lokiSearch:
+                  datasourceUid: 'Loki'
+                traceQuery:
+                  timeShiftEnabled: true
+                  spanStartTimeShift: '1h'
+                  spanEndTimeShift: '-1h'
+                spanBar:
+                  type: 'Tag'
+                  tag: 'http.path'
+        prometheus:
+          remote_write:
+            - url: http://mimir-nginx.monitoring.svc:80/prometheus/api/v1/push
+    destination:
+      server: "https://kubernetes.default.svc"
+      namespace: monitoring
+    syncPolicy:
+      automated:
+        prune: true
+        selfHeal: true
+      syncOptions:
+        - ServerSideApply=true
+        - CreateNamespace=true
+
+
+#     grafana-operator = {
+#       name        = "grafana-operator"
+#       repository  = "https://grafana.github.io/helm-charts"
+#       chart       = "grafana-agent-operator"
+#       values_file = "grafana-operator-values.yaml"
+#     },
+#     grafana-promtail = {
+#       name        = "grafana-promtail"
+#       repository  = "https://grafana.github.io/helm-charts"
+#       chart       = "promtail"
+#       values_file = "grafana-promtail-values.yaml"
+#     },
+#     grafana-loki = {
+#       name        = "grafana-loki-distributed"
+#       repository  = "https://grafana.github.io/helm-charts"
+#       chart       = "loki-distributed"
+#       values_file = "grafana-loki-distributed-values.yaml"
+#     },
+#     grafana-prometheus = {
+#       name        = "grafana-prometheus"
+#       repository  = "https://prometheus-community.github.io/helm-charts"
+#       chart       = "kube-prometheus-stack"
+#       values_file = "grafana-prometheus-community-values.yaml"
+#     },
+#     grafana-tempo = {
+#       name        = "grafana-tempo"
+#       repository  = "https://grafana.github.io/helm-charts"
+#       chart       = "tempo-distributed"
+#       values_file = "grafana-tempo-distributed-values.yaml"
+#     },
+#     grafana-mimir = {
+#       name        = "grafana-mimir"
+#       repository  = "https://grafana.github.io/helm-charts"
+#       chart       = "mimir-distributed"
+#       values_file = "grafana-mimir-distributed-values.yaml"
+#     },

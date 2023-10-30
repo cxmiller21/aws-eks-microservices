@@ -1,38 +1,42 @@
 ######################
 # ArgoCD
 ######################
-resource "kubernetes_namespace" "argocd" {
-  metadata {
-    annotations = { name = "argocd" }
-    labels      = { project = local.cluster_name }
-    name        = "argocd"
-  }
-
-  provisioner "local-exec" {
-    # Finalizers are not removed by the above command, so we need to use the following
-    command = "./remove-k8s-finalizers.sh argocd namespace"
-    when    = destroy
-  }
-}
-
 resource "helm_release" "argo_cd" {
   name       = "argo"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
-  namespace  = kubernetes_namespace.argocd.metadata[0].name
+  namespace  = kubernetes_namespace.main["argocd"].metadata[0].name
   # version    = "6.0.1"
 
   values = [
     "${file("${local.values_file_dir}/argocd-values.yaml")}"
   ]
 
-  depends_on = [kubernetes_namespace.argocd]
+  depends_on = [kubernetes_namespace.main["argocd"]]
+}
+
+resource "helm_release" "argo_cd_applications" {
+  name       = "argo-apps"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argocd-apps"
+  namespace  = kubernetes_namespace.main["argocd"].metadata[0].name
+  # version    = "6.0.1"
+
+  values = [
+    "${file("${local.values_file_dir}/argocd-apps-values.yaml")}"
+  ]
+
+  depends_on = [
+    kubernetes_namespace.main["argocd"],
+    kubernetes_namespace.main["online_boutique"],
+    helm_release.argo_cd,
+  ]
 }
 
 resource "kubernetes_service" "argocd" {
   metadata {
     name      = "argocd-service"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
+    namespace = kubernetes_namespace.main["argocd"].metadata[0].name
     annotations = {
       "alb.ingress.kubernetes.io/healthcheck-path" = "/healthz"
     }
@@ -53,13 +57,13 @@ resource "kubernetes_service" "argocd" {
 
     type = "NodePort"
   }
-  depends_on = [kubernetes_namespace.argocd]
+  depends_on = [kubernetes_namespace.main["argocd"]]
 }
 
 resource "kubernetes_ingress_v1" "argocd_ingress" {
   metadata {
     name      = "ingress-argocd"
-    namespace = kubernetes_namespace.argocd.metadata[0].name
+    namespace = kubernetes_namespace.main["argocd"].metadata[0].name
     annotations = {
       "alb.ingress.kubernetes.io/backend-protocol" = "HTTP"
       # "alb.ingress.kubernetes.io/listen-ports"     = "[{'HTTPS':443}]"
@@ -88,7 +92,7 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
       }
     }
   }
-  depends_on = [kubernetes_namespace.argocd]
+  depends_on = [kubernetes_namespace.main["argocd"]]
 
   provisioner "local-exec" {
     command = "./remove-k8s-finalizers.sh argocd ingress"

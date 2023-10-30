@@ -56,6 +56,7 @@
 
 ## ArgoCD
 
+- [ ] Set up credentials for CodeCommit repo to be used by ArgoCD to connect to private repo
 - [ ] Create ArgoCD application to deploy Online Boutique application
 - [ ] Create ArgoCD application to deploy Grafana (LGTM) dashboards
 - [ ] Review notification options for ArgoCD

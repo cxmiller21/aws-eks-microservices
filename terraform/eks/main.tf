@@ -15,7 +15,14 @@ locals {
 
   ssm_parameter_prefix = replace(replace(local.project_prefix, "aws-", ""), "-", "_") # replace(local.project_prefix, "aws-", "")
 
-  cluster_version = "1.27"
+  cluster_version = "1.28"
+
+  # EKS Node Group Settings
+  eks_managed_node_instance_types = ["t3.small"]
+  eks_worker_node_group_min_size = 1
+  eks_worker_node_group_max_size = 4
+  eks_worker_node_group_desired_size = 3
+  eks_worker_node_group_disk_size = 8
 
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
@@ -24,40 +31,6 @@ locals {
 ################################################################################
 # EKS Module
 ################################################################################
-
-/*
-Needed to "fully" create the EKS cluster and the manage_aws_auth_configmap
-https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html#aws-auth-configmap
-
-"It is initially created to allow nodes to join your cluster, but you also use this
-ConfigMap to add role-based access control (RBAC) access to IAM principals"
-*/
-provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    command     = "aws"
-    # This requires the awscli to be installed locally where Terraform is executed
-    args = ["eks", "get-token", "--cluster-name", local.name]
-  }
-}
-
-resource "aws_ssm_parameter" "eks_cluster_certificate_authority_data" {
-  name        = "/${local.ssm_parameter_prefix}/cluster_certificate_authority_data"
-  type        = "SecureString" # "String" or "SecureString"
-  value       = module.eks.cluster_certificate_authority_data
-  description = "EKS Cluster Certificate Authority Data"
-}
-
-resource "aws_ssm_parameter" "eks_cluster_endpoint" {
-  name        = "/${local.ssm_parameter_prefix}/cluster_endpoint"
-  type        = "String"
-  value       = module.eks.cluster_endpoint
-  description = "EKS Cluster Endpoint"
-}
-
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 19.0"
@@ -108,7 +81,7 @@ module "eks" {
 
   eks_managed_node_group_defaults = {
     ami_type       = "AL2_x86_64"
-    instance_types = ["t3.medium"]
+    instance_types = local.eks_managed_node_instance_types
 
     # We are using the IRSA created below for permissions
     # However, we have to deploy with the policy attached FIRST (when creating a fresh cluster)
@@ -126,10 +99,10 @@ module "eks" {
 
   eks_managed_node_groups = {
     worker_node_group = {
-      min_size      = 1
-      max_size      = 4
-      desired_size  = 3
-      disk_size     = 8
+      min_size      = local.eks_worker_node_group_min_size
+      max_size      = local.eks_worker_node_group_max_size # 4
+      desired_size  = local.eks_worker_node_group_desired_size # 3
+      disk_size     = local.eks_worker_node_group_disk_size # 8
       capacity_type = "ON_DEMAND"
     }
   }

@@ -1,48 +1,27 @@
-provider "aws" {
-  region  = local.region
-  profile = "aws-eks-demo"
-}
-
-data "aws_caller_identity" "current" {}
-data "aws_availability_zones" "available" {}
-data "aws_region" "current" {}
-
 locals {
-  account_id       = data.aws_caller_identity.current.account_id
-  region           = "us-east-1"
-  cluster_name     = "aws-eks-demo"
-  project_prefix   = "${local.cluster_name}-${terraform.workspace}"
   aws_eks_alb_name = "aws-load-balancer-controller"
-
-  ssm_parameter_prefix = replace(replace(local.project_prefix, "aws-", ""), "-", "_") # replace(local.project_prefix, "aws-", "")
-
   values_file_dir = "${path.module}/../../kubernetes/helm/eks/values"
 
-  tags = {
-    Region         = local.region
-    CodeCommitRepo = local.cluster_name
-    AWSOrg         = "Demo"
-  }
+  kubernetes_namespaces = ["argocd", "online-boutique", "monitoring"]
+  # kubernetes_namespaces = ["argocd", "online-boutique", "monitoring"]
 }
 
-# Kubernetes Resources
-data "aws_ssm_parameter" "eks_cluster_certificate_authority_data" {
-  name = "/${local.ssm_parameter_prefix}/cluster_certificate_authority_data"
-}
+/*
+Needed to "fully" create the EKS cluster and the manage_aws_auth_configmap
+https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html#aws-auth-configmap
 
-data "aws_ssm_parameter" "eks_cluster_endpoint" {
-  name = "/${local.ssm_parameter_prefix}/cluster_endpoint"
-}
-
+"It is initially created to allow nodes to join your cluster, but you also use this
+ConfigMap to add role-based access control (RBAC) access to IAM principals"
+*/
 provider "kubernetes" {
-  host                   = data.aws_ssm_parameter.eks_cluster_endpoint.value
-  cluster_ca_certificate = base64decode(data.aws_ssm_parameter.eks_cluster_certificate_authority_data.value)
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
 
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
     # This requires the awscli to be installed locally where Terraform is executed
-    args = ["eks", "get-token", "--cluster-name", local.cluster_name]
+    args = ["eks", "get-token", "--cluster-name", local.name]
   }
 }
 
@@ -65,12 +44,12 @@ resource "kubernetes_service_account" "aws_alb_controller" {
 # Not creating AWS ALB for some reason (probably IAM permissions - need to debug further)
 provider "helm" {
   kubernetes {
-    host                   = data.aws_ssm_parameter.eks_cluster_endpoint.value
-    cluster_ca_certificate = base64decode(data.aws_ssm_parameter.eks_cluster_certificate_authority_data.value)
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", local.cluster_name]
+      args        = ["eks", "get-token", "--cluster-name", local.name]
     }
   }
 }
@@ -89,7 +68,7 @@ resource "helm_release" "aws_eks_alb" {
 
   set {
     name  = "clusterName"
-    value = local.cluster_name
+    value = local.name
   }
 
   set {
@@ -100,5 +79,23 @@ resource "helm_release" "aws_eks_alb" {
   set {
     name  = "serviceAccount.name"
     value = local.aws_eks_alb_name
+  }
+}
+
+############################
+# Kubernetes Namespaces
+############################
+resource "kubernetes_namespace" "main" {
+  for_each = toset(local.kubernetes_namespaces)
+  metadata {
+    annotations = { name = each.key }
+    labels      = { project = local.name }
+    name        = each.key
+  }
+
+  provisioner "local-exec" {
+    # Finalizers are not removed by the above command, so we need to use the following
+    command = "./remove-k8s-finalizers.sh ${each.key} namespace"
+    when    = destroy
   }
 }
