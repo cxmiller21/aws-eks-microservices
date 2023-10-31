@@ -18,11 +18,11 @@ locals {
   cluster_version = "1.28"
 
   # EKS Node Group Settings
-  eks_managed_node_instance_types = ["t3.small"]
-  eks_worker_node_group_min_size = 1
-  eks_worker_node_group_max_size = 4
+  eks_managed_node_instance_types    = ["t3.small"]
+  eks_worker_node_group_min_size     = 1
+  eks_worker_node_group_max_size     = 3
   eks_worker_node_group_desired_size = 3
-  eks_worker_node_group_disk_size = 8
+  eks_worker_node_group_disk_size    = 8
 
   vpc_cidr = "10.0.0.0/16"
   azs      = slice(data.aws_availability_zones.available.names, 0, 3)
@@ -97,12 +97,69 @@ module "eks" {
     }
   }
 
+  ########################################
+  # Fargate
+  ########################################
+    # Fargate profiles use the cluster primary security group so these are not utilized
+  # create_cluster_security_group = false
+  # create_node_security_group    = false
+
+  # fargate_profile_defaults = {
+  #   iam_role_additional_policies = {
+  #     additional = aws_iam_policy.additional.arn
+  #   }
+  # }
+
+  # fargate_profiles = merge(
+  #   {
+  #     example = {
+  #       name = "example"
+  #       selectors = [
+  #         {
+  #           namespace = "backend"
+  #           labels = {
+  #             Application = "backend"
+  #           }
+  #         },
+  #         {
+  #           namespace = "app-*"
+  #           labels = {
+  #             Application = "app-wildcard"
+  #           }
+  #         }
+  #       ]
+
+  #       # Using specific subnets instead of the subnets supplied for the cluster itself
+  #       subnet_ids = [module.vpc.private_subnets[1]]
+
+  #       tags = {
+  #         Owner = "secondary"
+  #       }
+
+  #       timeouts = {
+  #         create = "20m"
+  #         delete = "20m"
+  #       }
+  #     }
+  #   },
+  #   { for i in range(3) :
+  #     "kube-system-${element(split("-", local.azs[i]), 2)}" => {
+  #       selectors = [
+  #         { namespace = "kube-system" }
+  #       ]
+  #       # We want to create a profile per AZ for high availability
+  #       subnet_ids = [element(module.vpc.private_subnets, i)]
+  #     }
+  #   }
+  # )
+  ########################################
+
   eks_managed_node_groups = {
     worker_node_group = {
       min_size      = local.eks_worker_node_group_min_size
-      max_size      = local.eks_worker_node_group_max_size # 4
+      max_size      = local.eks_worker_node_group_max_size     # 4
       desired_size  = local.eks_worker_node_group_desired_size # 3
-      disk_size     = local.eks_worker_node_group_disk_size # 8
+      disk_size     = local.eks_worker_node_group_disk_size    # 8
       capacity_type = "ON_DEMAND"
     }
   }
@@ -122,6 +179,10 @@ module "eks" {
   ]
 
   tags = local.tags
+
+  # depends_on = [
+  #   module.vpc,
+  # ]
 }
 
 ################################################################################

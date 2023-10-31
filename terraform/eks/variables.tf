@@ -24,5 +24,11 @@ variable "public_subnet_cidrs" {
 variable "federated_role_name" {
   type        = string
   description = "SSO Federated Administrato Role Name"
-  default = ""
+  default     = ""
+}
+
+variable "enable_grafana_ingress" {
+  type = bool
+  default = false
+  description = "Enable Grafana Ingress and Service accounts in EKS cluster"
 }

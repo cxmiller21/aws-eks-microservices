@@ -1,9 +1,11 @@
 locals {
   aws_eks_alb_name = "aws-load-balancer-controller"
-  values_file_dir = "${path.module}/../../kubernetes/helm/eks/values"
-
-  kubernetes_namespaces = ["argocd", "online-boutique", "monitoring"]
-  # kubernetes_namespaces = ["argocd", "online-boutique", "monitoring"]
+  values_file_dir  = "${path.module}/../../kubernetes/helm/eks/values"
+  kubernetes_namespaces = [
+    "argocd",
+    "online-boutique",
+    "monitoring",
+  ]
 }
 
 /*
@@ -38,6 +40,11 @@ resource "kubernetes_service_account" "aws_alb_controller" {
       "app.kubernetes.io/name"      = local.aws_eks_alb_name
     }
   }
+
+  depends_on = [
+    module.eks,
+    module.vpc_cni_irsa,
+  ]
 }
 
 # Helm Resources
@@ -80,6 +87,11 @@ resource "helm_release" "aws_eks_alb" {
     name  = "serviceAccount.name"
     value = local.aws_eks_alb_name
   }
+
+  depends_on = [
+    module.eks,
+    module.vpc_cni_irsa,
+  ]
 }
 
 ############################
@@ -93,9 +105,92 @@ resource "kubernetes_namespace" "main" {
     name        = each.key
   }
 
+  depends_on = [
+    module.eks,
+    module.vpc_cni_irsa,
+  ]
+
   provisioner "local-exec" {
     # Finalizers are not removed by the above command, so we need to use the following
     command = "./remove-k8s-finalizers.sh ${each.key} namespace"
+    when    = destroy
+  }
+}
+
+# ######################
+# # Grafana Ingress
+# ######################
+resource "kubernetes_service" "grafana_service" {
+  count = var.enable_grafana_ingress ? 1 : 0
+  metadata {
+    name      = "grafana-service"
+    namespace = kubernetes_namespace.main["monitoring"].metadata[0].name
+    annotations = {
+      "alb.ingress.kubernetes.io/healthcheck-path" = "/api/health"
+    }
+  }
+
+  spec {
+    selector = {
+      "app.kubernetes.io/name" = "grafana"
+    }
+
+    session_affinity = "None"
+
+    port {
+      port        = 3000
+      target_port = 3000
+      protocol    = "TCP"
+    }
+
+    type = "NodePort"
+  }
+
+  depends_on = [
+    kubernetes_namespace.main["monitoring"],
+  ]
+}
+
+resource "kubernetes_ingress_v1" "grafana_ingress" {
+  count = var.enable_grafana_ingress ? 1 : 0
+  metadata {
+    name      = "ingress-grafana"
+    namespace = kubernetes_namespace.main["monitoring"].metadata[0].name
+    annotations = {
+      "kubernetes.io/ingress.class"                = "alb"
+      "alb.ingress.kubernetes.io/scheme"           = "internet-facing"
+      "alb.ingress.kubernetes.io/target-type"      = "ip"
+      "alb.ingress.kubernetes.io/healthcheck-path" = "/api/health"
+    }
+  }
+
+  spec {
+    ingress_class_name = "alb"
+
+    rule {
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "grafana-service"
+              port {
+                number = 3000
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    kubernetes_namespace.main["monitoring"],
+  ]
+
+  provisioner "local-exec" {
+    command = "./remove-k8s-finalizers.sh monitoring ingress"
     when    = destroy
   }
 }

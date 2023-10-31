@@ -1,15 +1,19 @@
+# ArgoCD Charts
 # https://github.com/argoproj/argo-helm/blob/main/charts/argocd-apps/values.yaml
+
+# Reference ./kubernetes/helm/eks/values/ folder for values files that have been
+# added to the helm.value sections below
 applications:
   - name: online-boutique
     project: default
     source:
-      repoURL: 'https://github.com/cxmiller21/aws-eks-microservices'
+      repoURL: "https://github.com/cxmiller21/aws-eks-microservices"
       targetRevision: HEAD
       path: kubernetes/online-boutique/tracing
     destination:
-      name: ''
+      name: ""
       namespace: online-boutique
-      server: 'https://kubernetes.default.svc'
+      server: "https://kubernetes.default.svc"
     syncPolicy:
       automated:
         prune: true
@@ -18,112 +22,272 @@ applications:
         - CreateNamespace=true
 
   # Grafana and Prometheus Monitoring Applications
-  - name: grafana-promotheus
-    namespace: argocd
-    project: default
-    source:
-      chart: kube-prometheus-stack
-      repoURL: https://prometheus-community.github.io/helm-charts
-      targetRevision: "52.1.0"
-      helm:
-        releaseName: grafana-prometheus
-        value: |-
-        grafana:
-          env:
-            GF_FEATURE_TOGGLES_ENABLE: tempoSearch,tempoServiceGraph,tempoApmTable,traceqlEditor
-          additionalDataSources:
-            - name: Loki
-              type: loki
-              access: proxy
-              url: http://grafana-loki-distributed-gateway.monitoring.svc.cluster.local:80
-              jsonData:
-                maxLines: 1000
-            - name: Mimir
-              type: prometheus
-              access: proxy
-              url: http://grafana-mimir-nginx.monitoring.svc:80/prometheus
-            - name: Tempo
-              type: tempo
-              uid: tempo
-              url: http://grafana-tempo-query-frontend.monitoring.svc.cluster.local:3100
-              access: proxy
-              basicAuth: false
-              jsonData:
-                httpMethod: GET
-                tracesToLogsV2:
-                  # Field with an internal link pointing to a logs data source in Grafana.
-                  # datasourceUid value must match the uid value of the logs data source.
-                  datasourceUid: 'Loki'
-                  # spanStartTimeShift: '1h'
-                  # spanEndTimeShift: '-1h'
-                  tags: ['job', 'instance', 'pod', 'namespace']
-                  filterByTraceID: false
-                  filterBySpanID: false
-                  customQuery: true
-                  query: 'method="${__span.tags.method}"'
-                serviceMap:
-                  datasourceUid: 'Prometheus'
-                nodeGraph:
-                  enabled: true
-                search:
-                  hide: false
-                lokiSearch:
-                  datasourceUid: 'Loki'
-                traceQuery:
-                  timeShiftEnabled: true
-                  spanStartTimeShift: '1h'
-                  spanEndTimeShift: '-1h'
-                spanBar:
-                  type: 'Tag'
-                  tag: 'http.path'
-        prometheus:
-          remote_write:
-            - url: http://mimir-nginx.monitoring.svc:80/prometheus/api/v1/push
-    destination:
-      server: "https://kubernetes.default.svc"
-      namespace: monitoring
-    syncPolicy:
-      automated:
-        prune: true
-        selfHeal: true
-      syncOptions:
-        - ServerSideApply=true
-        - CreateNamespace=true
+  # - name: grafana-promotheus
+  #   project: default
+  #   source:
+  #     chart: kube-prometheus-stack
+  #     repoURL: https://prometheus-community.github.io/helm-charts
+  #     targetRevision: "52.1.0"
+  #     helm:
+  #       releaseName: grafana-prometheus
+  #       values: |-
+  #         grafana:
+  #           env:
+  #             GF_FEATURE_TOGGLES_ENABLE: tempoSearch,tempoServiceGraph,tempoApmTable,traceqlEditor
+  #           additionalDataSources:
+  #             - name: Loki
+  #               type: loki
+  #               access: proxy
+  #               url: http://grafana-loki-loki-distributed-gateway.monitoring.svc.cluster.local:80
+  #               jsonData:
+  #                 maxLines: 1000
+  #             - name: Mimir
+  #               type: prometheus
+  #               access: proxy
+  #               url: http://grafana-mimir-nginx.monitoring.svc:80/prometheus
+  #             - name: Tempo
+  #               type: tempo
+  #               uid: tempo
+  #               url: http://grafana-tempo-query-frontend.monitoring.svc.cluster.local:3100
+  #               access: proxy
+  #               basicAuth: false
+  #               jsonData:
+  #                 httpMethod: GET
+  #                 tracesToLogsV2:
+  #                   # Field with an internal link pointing to a logs data source in Grafana.
+  #                   # datasourceUid value must match the uid value of the logs data source.
+  #                   datasourceUid: "Loki"
+  #                   # spanStartTimeShift: '1h'
+  #                   # spanEndTimeShift: '-1h'
+  #                   tags: ["job", "instance", "pod", "namespace"]
+  #                   filterByTraceID: false
+  #                   filterBySpanID: false
+  #                   customQuery: true
+  #                   query: 'method="${__span.tags.method}"'
+  #                 serviceMap:
+  #                   datasourceUid: "Prometheus"
+  #                 nodeGraph:
+  #                   enabled: true
+  #                 search:
+  #                   hide: false
+  #                 lokiSearch:
+  #                   datasourceUid: "Loki"
+  #                 traceQuery:
+  #                   timeShiftEnabled: true
+  #                   spanStartTimeShift: "1h"
+  #                   spanEndTimeShift: "-1h"
+  #                 spanBar:
+  #                   type: "Tag"
+  #                   tag: "http.path"
+  #         prometheus:
+  #           remote_write:
+  #             - url: http://mimir-nginx.monitoring.svc:80/prometheus/api/v1/push
+  #   destination:
+  #     server: "https://kubernetes.default.svc"
+  #     namespace: monitoring
+  #   syncPolicy:
+  #     automated:
+  #       prune: true
+  #       selfHeal: true
+  #     syncOptions:
+  #       - ServerSideApply=true
+  #       - CreateNamespace=true
+  # - name: grafana-operator
+  #   project: default
+  #   source:
+  #     chart: grafana-agent-operator
+  #     repoURL: https://grafana.github.io/helm-charts
+  #     targetRevision: "0.3.6"
+  #     helm:
+  #       releaseName: grafana-operator
+  #       values: |-
+  #         remote_write:
+  #           - url: http://mimir-nginx.monitoring.svc:80/prometheus/api/v1/push
+  #   destination:
+  #     server: "https://kubernetes.default.svc"
+  #     namespace: monitoring
+  #   syncPolicy:
+  #     automated:
+  #       prune: true
+  #       selfHeal: true
+  #     syncOptions:
+  #       - ServerSideApply=true
+  #       - CreateNamespace=true
+  # - name: grafana-loki
+  #   project: default
+  #   source:
+  #     chart: loki-distributed
+  #     repoURL: https://grafana.github.io/helm-charts
+  #     targetRevision: "0.74.6"
+  #     helm:
+  #       releaseName: grafana-loki
+  #       values: |-
+  #         loki:
+  #           auth_enabled: false
+  #           structuredConfig:
+  #             ingester:
+  #               # Disable chunk transfer which is not possible with statefulsets
+  #               # and unnecessary for boltdb-shipper
+  #               max_transfer_retries: 0
+  #               chunk_idle_period: 1h
+  #               chunk_target_size: 1536000
+  #               max_chunk_age: 1h
+  #             storage_config:
+  #               aws:
+  #                 s3: s3://us-east-1
+  #                 bucketnames: aws-eks-demo-default-loki-bucket
+  #                 dynamodb:
+  #                   dynamodb_url: dynamodb://us-east-1
+  #               boltdb_shipper:
+  #                 shared_store: s3
+  #             schema_config:
+  #               configs:
+  #                 - from: 2020-09-07
+  #                   store: boltdb-shipper
+  #                   object_store: aws
+  #                   schema: v11
+  #                   index:
+  #                     prefix: loki_index_
+  #                     period: 24h
+  #   destination:
+  #     server: "https://kubernetes.default.svc"
+  #     namespace: monitoring
+  #   syncPolicy:
+  #     automated:
+  #       prune: true
+  #       selfHeal: true
+  #     syncOptions:
+  #       - ServerSideApply=true
+  #       - CreateNamespace=true
+  # - name: grafana-promtail
+  #   project: default
+  #   source:
+  #     chart: promtail
+  #     repoURL: https://grafana.github.io/helm-charts
+  #     targetRevision: "6.15.2"
+  #     helm:
+  #       releaseName: grafana-promtail
+  #       values: |-
+  #         config:
+  #           clients:
+  #             - url: http://grafana-loki-loki-distributed-gateway.monitoring.svc.cluster.local:80/loki/api/v1/push
+  #   destination:
+  #     server: "https://kubernetes.default.svc"
+  #     namespace: monitoring
+  #   syncPolicy:
+  #     automated:
+  #       prune: true
+  #       selfHeal: true
+  #     syncOptions:
+  #       - ServerSideApply=true
+  #       - CreateNamespace=true
+  # - name: grafana-tempo
+  #   project: default
+  #   source:
+  #     chart: tempo-distributed
+  #     repoURL: https://grafana.github.io/helm-charts
+  #     targetRevision: "1.6.10"
+  #     helm:
+  #       releaseName: grafana-tempo
+  #       values: |-
+  #         global:
+  #           clusterDomain: 'cluster.local'
+  #         gateway:
+  #           enabled: true
+  #         minio:
+  #           enabled: true
 
+  #         storage:
+  #           trace:
+  #             backend: s3
+  #             s3:
+  #               bucket: aws-eks-demo-default-otel-tempo-bucket
+  #               endpoint: s3.amazonaws.com
+  #               region: us-east-1
+  #               insecure: true
+  #         traces:
+  #           otlp:
+  #             grpc:
+  #               enabled: true
+  #             http:
+  #               enabled: true
+  #           zipkin:
+  #             enabled: false
+  #           jaeger:
+  #             thriftHttp:
+  #               enabled: false
+  #           opencensus:
+  #             enabled: false
 
-#     grafana-operator = {
-#       name        = "grafana-operator"
-#       repository  = "https://grafana.github.io/helm-charts"
-#       chart       = "grafana-agent-operator"
-#       values_file = "grafana-operator-values.yaml"
-#     },
-#     grafana-promtail = {
-#       name        = "grafana-promtail"
-#       repository  = "https://grafana.github.io/helm-charts"
-#       chart       = "promtail"
-#       values_file = "grafana-promtail-values.yaml"
-#     },
-#     grafana-loki = {
-#       name        = "grafana-loki-distributed"
-#       repository  = "https://grafana.github.io/helm-charts"
-#       chart       = "loki-distributed"
-#       values_file = "grafana-loki-distributed-values.yaml"
-#     },
-#     grafana-prometheus = {
-#       name        = "grafana-prometheus"
-#       repository  = "https://prometheus-community.github.io/helm-charts"
-#       chart       = "kube-prometheus-stack"
-#       values_file = "grafana-prometheus-community-values.yaml"
-#     },
-#     grafana-tempo = {
-#       name        = "grafana-tempo"
-#       repository  = "https://grafana.github.io/helm-charts"
-#       chart       = "tempo-distributed"
-#       values_file = "grafana-tempo-distributed-values.yaml"
-#     },
-#     grafana-mimir = {
-#       name        = "grafana-mimir"
-#       repository  = "https://grafana.github.io/helm-charts"
-#       chart       = "mimir-distributed"
-#       values_file = "grafana-mimir-distributed-values.yaml"
-#     },
+  #         metrics_generator:
+  #           # enabled: true
+  #           config:
+  #             service_graphs_max_items: 15000
+  #             storage_remote_write:
+  #               - url: http://prometheus-community-kube-prometheus.monitoring.svc:9090/prometheus/api/v1/write
+
+  #         global_overrides:
+  #           metrics_generator_processors:
+  #             - service-graphs
+  #             - span-metrics
+  #   destination:
+  #     server: "https://kubernetes.default.svc"
+  #     namespace: monitoring
+  #   syncPolicy:
+  #     automated:
+  #       prune: true
+  #       selfHeal: true
+  #     syncOptions:
+  #       - ServerSideApply=true
+  #       - CreateNamespace=true
+  # - name: grafana-mimir
+    # project: default
+    # source:
+    #   chart: mimir-distributed
+    #   repoURL: https://grafana.github.io/helm-charts
+    #   targetRevision: "5.1.0"
+    #   helm:
+    #     releaseName: grafana-mimir
+    #     values: |-
+    #       global:
+    #         podAnnotations:
+    #           bucketSecretVersion: "0"
+
+    #       # Disable the requirement that every request to Mimir has a
+    #       # X-Scope-OrgID header. `anonymous` will be substituted in instead.
+    #       multitenancy_enabled: false
+
+    #       metaMonitoring:
+    #         serviceMonitor:
+    #           enabled: true
+
+    #         grafanaAgent:
+    #           enabled: true
+    #           installOperator: false
+    #           metrics:
+    #             additionalRemoteWriteConfigs:
+    #               - url: "http://grafana-mimir-nginx.monitoring.svc:80/api/v1/push"
+
+    #       # This turns of the built-in MinIO support
+    #       minio:
+    #         enabled: false # false for S3
+
+    #       mimir:
+    #         structuredConfig:
+    #           blocks_storage:
+    #             backend: s3
+    #             s3:
+    #               bucket_name: aws-eks-demo-default-mimir-bucket
+    #               endpoint: s3.amazonaws.com
+    #               region: us-east-1
+    #               insecure: true
+    # destination:
+    #   server: "https://kubernetes.default.svc"
+    #   namespace: monitoring
+    # syncPolicy:
+    #   automated:
+    #     prune: true
+    #     selfHeal: true
+    #   syncOptions:
+    #     - ServerSideApply=true
+    #     - CreateNamespace=true

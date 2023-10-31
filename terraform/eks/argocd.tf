@@ -6,13 +6,15 @@ resource "helm_release" "argo_cd" {
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argo-cd"
   namespace  = kubernetes_namespace.main["argocd"].metadata[0].name
-  # version    = "6.0.1"
+  version    = "5.49.0"
 
   values = [
     "${file("${local.values_file_dir}/argocd-values.yaml")}"
   ]
 
-  depends_on = [kubernetes_namespace.main["argocd"]]
+  depends_on = [
+    kubernetes_namespace.main["argocd"],
+  ]
 }
 
 resource "helm_release" "argo_cd_applications" {
@@ -20,7 +22,7 @@ resource "helm_release" "argo_cd_applications" {
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argocd-apps"
   namespace  = kubernetes_namespace.main["argocd"].metadata[0].name
-  # version    = "6.0.1"
+  version    = "1.4.1"
 
   values = [
     "${file("${local.values_file_dir}/argocd-apps-values.yaml")}"
@@ -57,7 +59,11 @@ resource "kubernetes_service" "argocd" {
 
     type = "NodePort"
   }
-  depends_on = [kubernetes_namespace.main["argocd"]]
+
+  depends_on = [
+    kubernetes_namespace.main["argocd"],
+    helm_release.argo_cd,
+  ]
 }
 
 resource "kubernetes_ingress_v1" "argocd_ingress" {
@@ -92,7 +98,11 @@ resource "kubernetes_ingress_v1" "argocd_ingress" {
       }
     }
   }
-  depends_on = [kubernetes_namespace.main["argocd"]]
+
+  depends_on = [
+    kubernetes_namespace.main["argocd"],
+    helm_release.argo_cd,
+  ]
 
   provisioner "local-exec" {
     command = "./remove-k8s-finalizers.sh argocd ingress"

@@ -1,18 +1,20 @@
+# Set to true to enable High Availability
+# Additionally, uncomment below settings to complete HA
 redis-ha:
-  enabled: true
+  enabled: false
 
-controller:
-  replicas: 2
+# controller:
+#   replicas: 2
 
-server:
-  replicas: 2
+# server:
+#   replicas: 2
 
 configs:
   params:
     server.insecure: true
 
-repoServer:
-  replicas: 2
+# repoServer:
+#   replicas: 2
 
-applicationSet:
-  replicas: 2
+# applicationSet:
+#   replicas: 2

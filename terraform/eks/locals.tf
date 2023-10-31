@@ -1,5 +1,5 @@
 locals {
-  name             = "aws-eks-demo"
+  name = "aws-eks-demo"
 
   tags = {
     Region         = local.region
